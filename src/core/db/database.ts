@@ -6,10 +6,11 @@ import { Injectable } from "../di";
 export class DatabaseService extends Dexie {
   constructor() {
     super("game-library");
-    this._initializeSchema();
   }
 
-  private _initializeSchema() {
-    this.version(1).stores(EntityContainer.instance.getSchemas());
+  async initialize(): Promise<void> {
+    const version = EntityContainer.instance.currentVersion;
+    this.version(version).stores(EntityContainer.instance.schemas);
+    console.log("Esquema actualizado:", EntityContainer.instance.schemas);
   }
 }

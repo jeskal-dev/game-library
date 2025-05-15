@@ -5,7 +5,7 @@ import "./styles/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-import { SignalsProvider } from "./core";
+import { DatabaseProvider } from "./core/db";
 const queryClient = new QueryClient();
 
 const router = createRouter({
@@ -27,11 +27,11 @@ if (!rootElement.innerHTML) {
   const root = createRoot(rootElement);
   root.render(
     <StrictMode>
-      <SignalsProvider>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <DatabaseProvider>
           <RouterProvider router={router} />
-        </QueryClientProvider>
-      </SignalsProvider>
+        </DatabaseProvider>
+      </QueryClientProvider>
     </StrictMode>
   );
 }

@@ -3,53 +3,77 @@ import type { EntityOptions } from "./types";
 
 export class EntityContainer {
   private static _instance: EntityContainer;
+  private _schemas: Record<string, string> = {};
+  private _currentVersion: number;
+  private _isDbInitialized = false;
+
+  // Colecciones de metadatos
+  public readonly entities = new Set<Constructor>();
+  public readonly entityMetadata = new Map<Constructor, EntityOptions>();
+  public readonly primaryKeys = new Map<Constructor, string>();
+  public readonly columns = new Map<Constructor, Set<string>>();
+
+  private constructor() {
+    this._currentVersion = this.loadPersistedVersion();
+  }
 
   static get instance() {
-    if (!EntityContainer._instance)
-      EntityContainer._instance = new EntityContainer();
-
-    return EntityContainer._instance;
+    return this._instance || (this._instance = new EntityContainer());
   }
 
-  entities: Constructor[] = [];
-  entityMetadata = new Map<Constructor, EntityOptions>();
-  primaryKeys = new Map<Constructor, string>();
-  indexes = new Map<Constructor, string[]>();
-
-  registerEntity(entity: Constructor) {
-    this.entities.push(entity);
+  get currentVersion() {
+    return this._currentVersion;
   }
 
-  getSchemas() {
-    return this.entities.reduce((schema, entity) => {
-      const options = this.entityMetadata.get(entity);
-      const pk = this.primaryKeys.get(entity);
-      const idx = this.resolveIndexes(entity);
-
-      return {
-        ...schema,
-        [options?.tableName ?? entity.name]: pk
-          ? [pk, ...idx].join(",")
-          : "++id",
-      };
-    }, {} as Record<string, string>);
+  get isDbInitialized() {
+    return this._isDbInitialized;
   }
 
-  registerEntityMetadata<T>(token: Constructor<T>, options: EntityOptions) {
-    this.entityMetadata.set(token, options);
+  /** Registra el esquema de una entidad con validación completa */
+  registerEntitySchema(entity: Constructor, options: EntityOptions) {
+    this.validatePrimaryKey(entity);
+
+    const tableName = options.tableName || entity.name;
+    const pk = this.primaryKeys.get(entity)!;
+    const columns = Array.from(this.columns.get(entity)?.values() ?? []);
+    console.log({columns})
+    this._schemas[tableName] = [pk, ...columns].join(", ");
+    // this.updateVersion();
   }
 
-  registerPrimaryKey<T>(token: Constructor<T>, key: string) {
-    this.primaryKeys.set(token, key);
+  /** Obtiene esquemas actuales para configuración de DB */
+  get schemas() {
+    return { ...this._schemas };
   }
 
-  registerIndex<T>(token: Constructor<T>, key: string) {
-    const existing = this.resolveIndexes(token);
-    const indexes = [...existing, key];
-    this.indexes.set(token, indexes);
+  /** Sistema de versionado mejorado */
+  private loadPersistedVersion(): number {
+    const stored = localStorage.getItem("dbVersion");
+    return stored ? parseInt(stored, 10) : 1;
   }
 
-  resolveIndexes<T>(token: Constructor<T>) {
-    return this.indexes.get(token) ?? [];
+  private updateVersion() {
+    const schemaHash = Object.keys(this._schemas).sort().join("|");
+    this._currentVersion = this.generateStableHash(schemaHash);
+    localStorage.setItem("dbVersion", this._currentVersion.toString());
+  }
+
+  private generateStableHash(str: string): number {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) + hash + str.charCodeAt(i);
+    }
+    return hash >>> 0; // Entero positivo
+  }
+
+  /** Validaciones centralizadas */
+  private validatePrimaryKey(entity: Constructor) {
+    if (!this.primaryKeys.has(entity)) {
+      throw new Error(`Entidad ${entity.name} debe tener @PrimaryKey definido`);
+    }
+  }
+
+  markDbAsInitialized() {
+    this._isDbInitialized = true;
   }
 }

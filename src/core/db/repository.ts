@@ -26,6 +26,7 @@ export class BaseRepository<T extends BaseEntity> {
   }
 
   async create(item: Omit<T, "id">) {
+    console.log({ item });
     return this.table.add(item as T);
   }
 
