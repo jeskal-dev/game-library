@@ -33,7 +33,7 @@ function Index() {
         <FeaturesSection />
       </motion.div>
       <CTAFooter />
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }

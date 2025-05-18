@@ -2,16 +2,18 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/global.css";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { signal } from "@preact-signals/safe-react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import { routeTree } from "./routeTree.gen";
 import { DatabaseProvider } from "./core/db";
-const queryClient = new QueryClient();
+import { createPersistedQueyClient } from "./core/providers/QueryClient";
+import { routeTree } from "./routeTree.gen";
+const queryClient = signal(createPersistedQueyClient());
 
 const router = createRouter({
   routeTree,
   context: {
-    queryClient,
+    queryClient: queryClient.value,
   },
 });
 
@@ -27,7 +29,7 @@ if (!rootElement.innerHTML) {
   const root = createRoot(rootElement);
   root.render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient.value}>
         <DatabaseProvider>
           <RouterProvider router={router} />
         </DatabaseProvider>
