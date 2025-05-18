@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -122,5 +121,27 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .game-card {
+    @apply relative overflow-hidden rounded-xl bg-gaming-purple transition-all 
+           duration-300 hover:bg-gaming-card-hover hover:shadow-lg hover:shadow-gaming-accent/20
+           hover:-translate-y-1;
+  }
+
+  .game-badge {
+    @apply absolute top-2 right-2 bg-gaming-accent text-white px-2 py-1 rounded-full text-xs font-bold;
+  }
+
+  .btn-gaming {
+    @apply px-6 py-3 bg-gaming-accent hover:bg-gaming-accent/90 text-white 
+           font-medium rounded-lg shadow-md hover:shadow-lg transition-all 
+           duration-200 hover:shadow-gaming-accent/20 hover:-translate-y-0.5;
+  }
+
+  .section-divider {
+    @apply w-full h-1 my-16 bg-gradient-to-r from-transparent via-gaming-accent/50 to-transparent;
   }
 }
