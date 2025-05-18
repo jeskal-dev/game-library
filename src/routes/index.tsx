@@ -2,7 +2,6 @@ import {
   CommunityHighlights,
   CTAFooter,
   FeaturesSection,
-  Footer,
   HeroSection,
 } from "@/lib/components/landing";
 import { createFileRoute } from "@tanstack/react-router";
