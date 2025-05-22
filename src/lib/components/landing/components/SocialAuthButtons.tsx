@@ -9,7 +9,7 @@ const socialPlatforms = [
   { name: "GitHub", icon: Github, url: "#" },
 ];
 
-export function SocialAuthButtons() {
+export function SocialButtons() {
   return (
     <div className="flex gap-3 justify-center">
       {socialPlatforms.map(({ name, icon: Icon, url }) => (

@@ -1,16 +1,17 @@
 import {
-  CommunityHighlights,
-  CTAFooter,
-  FeaturesSection,
   HeroSection,
+  CommunityHighlights,
+  FeaturesSection,
+  CTAFooter,
 } from "@/lib/components/landing";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-export const Route = createFileRoute("/")({
-  component: Index,
+
+export const Route = createFileRoute("/(app)/_app/")({
+  component: RouteComponent,
 });
 
-function Index() {
+function RouteComponent() {
   return (
     <div className="bg-neutral-900 overflow-x-hidden">
       <HeroSection />

@@ -6,7 +6,7 @@ import {
 import { Separator } from "@/lib/ui/seporator";
 import { motion } from "framer-motion";
 import { Gamepad2 } from "lucide-react";
-import { SocialAuthButtons } from "./SocialAuthButtons";
+import { SocialButtons } from "./SocialAuthButtons";
 
 export function Footer() {
   return (
@@ -51,7 +51,7 @@ export function Footer() {
               whileHover={{ scale: 1.03 }}
               className="bg-neutral-800/40 p-4 rounded-xl border border-neutral-700/50"
             >
-              <SocialAuthButtons />
+              <SocialButtons />
             </motion.div>
           </NavigationMenuItem>
         </NavigationMenu>
