@@ -1,12 +1,8 @@
 import { useService } from "@/core";
 import type { Game } from "@/lib/domain/models/game/Model";
+import type { Ordering } from "@/lib/domain/request/RAWGRequest";
 import { RAWGService } from "@/lib/domain/services/RAWGService";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/lib/ui/accordion";
+import { Accordion } from "@/lib/ui/accordion";
 import { Button } from "@/lib/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/lib/ui/card";
 import { Input } from "@/lib/ui/input";
@@ -19,16 +15,21 @@ import {
 } from "@/lib/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/lib/ui/tabs";
 import { cn } from "@/lib/utils";
-import { signal, useSignal } from "@preact-signals/safe-react";
+import { signal, useComputed, useSignal } from "@preact-signals/safe-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
   FilterIcon,
+  Flame,
+  GamepadIcon,
+  Newspaper,
+  Rocket,
   SearchIcon,
   StarIcon,
 } from "lucide-react";
+import { VirtualRWAGSection } from "../../lib/components/virtualizer/VirtualRWAGSection";
 
 export const Route = createFileRoute("/(app)/_app/explore")({
   component: RouteComponent,
@@ -37,10 +38,30 @@ export const Route = createFileRoute("/(app)/_app/explore")({
 const games = signal<Game[]>([]);
 const selectedGenres = signal<string[]>([]);
 const searchQuery = signal("");
-function RouteComponent() {
-  const service = useService(RAWGService);
-  const isFilterOpen = useSignal(false);
+interface FilterState {
+  page: number;
+  page_size: number;
+  search: string;
+  genres: number[];
+  tags: number[];
+  publishers: number[];
+  platforms: number[];
+  ordering: Ordering;
+}
 
+const initialFilters: FilterState = {
+  page: 1,
+  page_size: 20,
+  search: "",
+  genres: [],
+  tags: [],
+  publishers: [],
+  platforms: [],
+  ordering: "-rating",
+};
+
+function RouteComponent() {
+  const isFilterOpen = useSignal(false);
   return (
     <div className="container mx-auto px-4 py-8">
       <motion.header
@@ -95,24 +116,26 @@ function RouteComponent() {
 }
 
 function MainSection() {
+  const gamesList = useComputed(() =>
+    games.value
+      .filter(
+        (game) =>
+          game.name.toLowerCase().includes(searchQuery.value.toLowerCase()) &&
+          (selectedGenres.value.length === 0 ||
+            game.genres.some((g) => selectedGenres.value.includes(g.name)))
+      )
+      .map((game) => <GameCard key={game.slug} game={game} />)
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1"
     >
-      {games.value
-        .filter(
-          (game) =>
-            game.name.toLowerCase().includes(searchQuery.value.toLowerCase()) &&
-            (selectedGenres.value.length === 0 ||
-              game.genres.some((g) => selectedGenres.value.includes(g.name)))
-        )
-        .map((game) => (
-          <GameCard key={game.slug} game={game} />
-        ))}
+      {gamesList}
 
-      {games.value.length === 0 && (
+      {gamesList.value.length === 0 && (
         <div className="col-span-full text-center text-muted-foreground py-12">
           No se encontraron resultados
         </div>
@@ -125,9 +148,9 @@ function TabsSection() {
   const activeTab = useSignal("trending");
   const isCollapsed = useSignal(false);
   const tabs = [
-    { value: "trending", label: "🔥 Tendencias" },
-    { value: "new", label: "🆕 Nuevos" },
-    { value: "upcoming", label: "🚀 Próximos" },
+    { value: "trending", icon: Flame, label: "Tendencias" },
+    { value: "new", icon: Newspaper, label: "Nuevos" },
+    { value: "upcoming", icon: Rocket, label: "Próximos" },
   ];
   return (
     <motion.aside
@@ -165,7 +188,12 @@ function TabsSection() {
             >
               <TabsList>
                 {tabs.map((tab) => (
-                  <TabsTrigger key={tab.value} value={tab.value}>
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="space-x-2"
+                  >
+                    <tab.icon className="size-4" />
                     <span className="truncate">{tab.label}</span>
                   </TabsTrigger>
                 ))}
@@ -173,7 +201,7 @@ function TabsSection() {
 
               <div className="mt-4 space-y-2">
                 {[...Array(5)].map((_, i) => (
-                  <CompactGameCard key={i} />
+                  <RecommendationCard key={i} />
                 ))}
               </div>
             </Tabs>
@@ -184,40 +212,94 @@ function TabsSection() {
   );
 }
 
+const currentAccordion = signal<string[]>([]);
+
 function FilterSection() {
-  const genres = ["Action", "RPG", "Adventure", "Indie", "Strategy"];
-
   return (
-    <Accordion type="multiple" defaultValue={["genres"]} className="space-y-4">
-      <AccordionItem value="genres">
-        <AccordionTrigger className="text-base">Géneros</AccordionTrigger>
-        <AccordionContent className="mt-2 space-y-2">
-          {genres.map((genre) => (
-            <Button
-              key={genre}
-              variant={
-                selectedGenres.value.includes(genre) ? "secondary" : "ghost"
-              }
-              className="w-full justify-start font-normal"
-              onClick={() =>
-                (selectedGenres.value = selectedGenres.value.includes(genre)
-                  ? selectedGenres.value.filter((g) => g !== genre)
-                  : [...selectedGenres.value, genre])
-              }
-            >
-              {genre}
-            </Button>
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-
-      {/* Placeholder para futuros filtros */}
-      <div className="opacity-50 text-sm text-muted-foreground">
-        Más filtros próximamente...
-      </div>
+    <Accordion
+      type="multiple"
+      className="space-y-4"
+      onValueChange={(value) => (currentAccordion.value = value)}
+    >
+      <GenresSection />
+      <TagsSection />
+      <PublishersSection />
+      <PlatformsSection />
     </Accordion>
   );
 }
+
+export const GenresSection = () => {
+  const service = useService(RAWGService);
+  return (
+    <VirtualRWAGSection
+      sectionKey="genres"
+      title="Géneros"
+      fetchFn={(params, config) => service.fetchGenres(params, config)}
+      icon={GamepadIcon}
+      renderItem={(item) => (
+        <Button variant="ghost" className="w-full justify-start font-normal">
+          {item.name}
+        </Button>
+      )}
+      enabled={currentAccordion.value.includes("genres")}
+    />
+  );
+};
+
+export const TagsSection = () => {
+  const service = useService(RAWGService);
+  return (
+    <VirtualRWAGSection
+      sectionKey="tags"
+      title="Tags"
+      fetchFn={(params, config) => service.fetchTags(params, config)}
+      icon={GamepadIcon}
+      renderItem={(item) => (
+        <Button variant="ghost" className="w-full justify-start font-normal">
+          {item.name}
+        </Button>
+      )}
+      enabled={currentAccordion.value.includes("tags")}
+    />
+  );
+};
+
+export const PublishersSection = () => {
+  const service = useService(RAWGService);
+  return (
+    <VirtualRWAGSection
+      sectionKey="publishers"
+      title="Editoriales"
+      fetchFn={(params, config) => service.fetchPublishers(params, config)}
+      icon={GamepadIcon}
+      renderItem={(item) => (
+        <Button variant="ghost" className="w-full justify-start font-normal">
+          {item.name}
+        </Button>
+      )}
+      enabled={currentAccordion.value.includes("publishers")}
+    />
+  );
+};
+
+export const PlatformsSection = () => {
+  const service = useService(RAWGService);
+  return (
+    <VirtualRWAGSection
+      sectionKey="platforms"
+      title="Plataformas"
+      fetchFn={(params, config) => service.fetchPlatforms(params, config)}
+      icon={GamepadIcon}
+      renderItem={(item) => (
+        <Button variant="ghost" className="w-full justify-start font-normal">
+          {item.name}
+        </Button>
+      )}
+      enabled={currentAccordion.value.includes("platforms")}
+    />
+  );
+};
 
 function GameCard({ game }: { game: Game }) {
   return (
@@ -272,7 +354,7 @@ function GameCard({ game }: { game: Game }) {
   );
 }
 
-function CompactGameCard() {
+function RecommendationCard() {
   return (
     <motion.div whileHover={{ translateX: 4 }} className="group cursor-pointer">
       <Card className="p-2 hover:border-emerald-500 transition-colors">

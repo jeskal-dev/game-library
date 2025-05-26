@@ -7,9 +7,13 @@ export type RAWGOrdering =
   | "rating"
   | "metacritic";
 export type Ordering = RAWGOrdering | `-${RAWGOrdering}`;
-export interface RAWGGameRequest {
+
+export interface RAWGPageRequest {
   page: number;
   page_size: number;
+}
+
+export interface RAWGGameRequest extends RAWGPageRequest {
   search: string;
   genres: number[];
   tags: number[];
