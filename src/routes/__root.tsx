@@ -1,3 +1,4 @@
+import { Error404 } from "@/lib/components/Error404";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
@@ -8,6 +9,7 @@ interface AppContext {
 
 export const Route = createRootRouteWithContext<AppContext>()({
   component: Root,
+  notFoundComponent: Error404
 });
 
 function Root() {

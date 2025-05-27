@@ -14,6 +14,7 @@ const router = createRouter({
   context: {
     queryClient,
   },
+  notFoundMode: "root",
 });
 
 declare module "@tanstack/react-router" {
