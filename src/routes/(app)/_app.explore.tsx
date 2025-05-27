@@ -1,34 +1,24 @@
 import { useService } from "@/core";
+import { GameCard } from "@/lib/components/explore/GameCard";
+import { TabsSection } from "@/lib/components/explore/TabsSection";
 import type { Game } from "@/lib/domain/models/game/Model";
 import type { Ordering } from "@/lib/domain/request/RAWGRequest";
 import { RAWGService } from "@/lib/domain/services/RAWGService";
 import { Accordion } from "@/lib/ui/accordion";
 import { Button } from "@/lib/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/lib/ui/card";
 import { Input } from "@/lib/ui/input";
 import {
   Sheet,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/lib/ui/sheet";
-import { Tabs, TabsList, TabsTrigger } from "@/lib/ui/tabs";
-import { cn } from "@/lib/utils";
 import { signal, useComputed, useSignal } from "@preact-signals/safe-react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  FilterIcon,
-  Flame,
-  GamepadIcon,
-  Newspaper,
-  Rocket,
-  SearchIcon,
-  StarIcon,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { FilterIcon, GamepadIcon, SearchIcon, XIcon } from "lucide-react";
 import { VirtualRWAGSection } from "../../lib/components/virtualizer/VirtualRWAGSection";
 
 export const Route = createFileRoute("/(app)/_app/explore")({
@@ -102,7 +92,9 @@ function RouteComponent() {
               <SheetHeader className="mb-6">
                 <SheetTitle className="text-xl">Filtros Avanzados</SheetTitle>
               </SheetHeader>
-              <FilterSection />
+              <div className="flex-1 overflow-y-auto">
+                <FilterSection />
+              </div>
             </SheetContent>
           </Sheet>
         </div>
@@ -124,7 +116,7 @@ function MainSection() {
           (selectedGenres.value.length === 0 ||
             game.genres.some((g) => selectedGenres.value.includes(g.name)))
       )
-      .map((game) => <GameCard key={game.slug} game={game} />)
+      .map((game) => <GameCard key={game.slug} value={game} />)
   );
 
   return (
@@ -144,87 +136,13 @@ function MainSection() {
   );
 }
 
-function TabsSection() {
-  const activeTab = useSignal("trending");
-  const isCollapsed = useSignal(false);
-  const tabs = [
-    { value: "trending", icon: Flame, label: "Tendencias" },
-    { value: "new", icon: Newspaper, label: "Nuevos" },
-    { value: "upcoming", icon: Rocket, label: "Próximos" },
-  ];
-  return (
-    <motion.aside
-      initial={{ x: 20 }}
-      animate={{ x: 0 }}
-      className={cn(
-        `relative hidden lg:block h-fit transition-all duration-300`,
-        isCollapsed.value ? "w-12" : "w-fit"
-      )}
-    >
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute -left-12 top-2 z-10"
-        onClick={() => (isCollapsed.value = !isCollapsed.value)}
-      >
-        {isCollapsed.value ? (
-          <ChevronLeft className="h-4 w-4" />
-        ) : (
-          <ChevronRight className="h-4 w-4" />
-        )}
-      </Button>
-
-      <AnimatePresence mode="wait">
-        {!isCollapsed.value && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="bg-background rounded-lg border p-4"
-          >
-            <Tabs
-              value={activeTab.value}
-              onValueChange={(value) => (activeTab.value = value)}
-            >
-              <TabsList>
-                {tabs.map((tab) => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                    className="space-x-2"
-                  >
-                    <tab.icon className="size-4" />
-                    <span className="truncate">{tab.label}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              <div className="mt-4 space-y-2">
-                {[...Array(5)].map((_, i) => (
-                  <RecommendationCard key={i} />
-                ))}
-              </div>
-            </Tabs>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.aside>
-  );
-}
-
-const currentAccordion = signal<string[]>([]);
-
 function FilterSection() {
   return (
-    <Accordion
-      type="multiple"
-      className="space-y-4"
-      onValueChange={(value) => (currentAccordion.value = value)}
-    >
+    <Accordion type="multiple" className="space-y-4">
       <GenresSection />
-      <TagsSection />
+      {/* <TagsSection />
       <PublishersSection />
-      <PlatformsSection />
+      <PlatformsSection /> */}
     </Accordion>
   );
 }
@@ -242,7 +160,6 @@ export const GenresSection = () => {
           {item.name}
         </Button>
       )}
-      enabled={currentAccordion.value.includes("genres")}
     />
   );
 };
@@ -260,7 +177,6 @@ export const TagsSection = () => {
           {item.name}
         </Button>
       )}
-      enabled={currentAccordion.value.includes("tags")}
     />
   );
 };
@@ -278,7 +194,6 @@ export const PublishersSection = () => {
           {item.name}
         </Button>
       )}
-      enabled={currentAccordion.value.includes("publishers")}
     />
   );
 };
@@ -296,91 +211,6 @@ export const PlatformsSection = () => {
           {item.name}
         </Button>
       )}
-      enabled={currentAccordion.value.includes("platforms")}
     />
   );
 };
-
-function GameCard({ game }: { game: Game }) {
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
-      className="h-full"
-    >
-      <Card className="h-full flex flex-col hover:border-emerald-500 transition-colors">
-        <CardHeader className="p-0 relative">
-          <img
-            src={game.background_image}
-            alt={game.name}
-            className="w-full h-48 object-cover rounded-t-lg"
-          />
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-            <h3 className="font-medium text-white line-clamp-2">{game.name}</h3>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-4 flex-1">
-          <div className="flex flex-wrap gap-2 mb-3">
-            {game.genres.slice(0, 3).map((genre) => (
-              <span
-                key={genre.name}
-                className="text-xs px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-full"
-              >
-                {genre.name}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <StarIcon className="h-4 w-4 text-amber-500" />
-              <span className="font-medium">{game.rating}</span>
-              <span className="text-muted-foreground">/5</span>
-            </div>
-            <span className="text-muted-foreground">
-              {new Date(game.released).toLocaleDateString()}
-            </span>
-          </div>
-        </CardContent>
-
-        <CardFooter className="border-t p-4">
-          <Button variant="outline" className="w-full" size="sm">
-            Ver Detalles
-          </Button>
-        </CardFooter>
-      </Card>
-    </motion.div>
-  );
-}
-
-function RecommendationCard() {
-  return (
-    <motion.div whileHover={{ translateX: 4 }} className="group cursor-pointer">
-      <Card className="p-2 hover:border-emerald-500 transition-colors">
-        <div className="flex gap-3">
-          <div className="w-16 h-16 rounded-md bg-muted overflow-hidden">
-            <img
-              src="https://via.placeholder.com/80"
-              alt="Game"
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          <div className="flex-1">
-            <h4 className="text-sm font-medium line-clamp-1 mb-1">
-              Nombre del Juego
-            </h4>
-            <div className="flex items-center gap-2">
-              <StarIcon className="h-3 w-3 text-amber-500" />
-              <span className="text-xs text-muted-foreground">4.8/5</span>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              Action • Adventure
-            </span>
-          </div>
-        </div>
-      </Card>
-    </motion.div>
-  );
-}
